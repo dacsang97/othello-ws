@@ -48,9 +48,6 @@ function surrender(data) {
   io.sockets.in(data.gameId).emit("surrender", {
     win: room.players[data.win - 1].name
   });
-  io.sockets.clients(data.gameId).forEach(client => {
-    client.leave(data.gameId);
-  });
 }
 
 function hostCreateNewGame(data) {
@@ -151,4 +148,15 @@ function newMove(data) {
   io.sockets.in(data.gameId).emit("newMove", data);
 }
 
-function gameOver(data) {}
+function gameOver(data) {
+  const room = rooms.find(room => room.id === data.gameId);
+  if (data.tie) {
+    io.sockets.in(data.gameId).emit("gameOver", {
+      tie: true
+    });
+  } else {
+    io.sockets.in(data.gameId).emit("gameOver", {
+      win: room.players[data.win - 1].name
+    });
+  }
+}
