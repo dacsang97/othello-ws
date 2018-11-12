@@ -1,6 +1,7 @@
 let io;
 let gameSocket;
 let rooms = [];
+let pwd = {};
 
 exports.initGame = function(sio, socket) {
   io = sio;
@@ -54,10 +55,17 @@ function surrender(data) {
 
 function hostCreateNewGame(data) {
   // Create a unique Socket.IO Room
-  var thisGameId = (Math.random() * 10000000) | 0;
+  let thisGameId = (Math.random() * 10000000) | 0;
+  let password = false;
+
+  if (data.password) {
+    password = true;
+    pwd[thisGameId] = data.password;
+  }
 
   rooms.push({
     id: thisGameId,
+    password,
     players: [
       {
         id: this.id,
@@ -93,12 +101,20 @@ function playerJoinGame(data) {
   console.log(roomIds);
   if (roomIds.includes(data.gameId)) {
     console.log("Room is found.");
+
     const room = rooms.find(room => room.id === data.gameId);
     const playerNum = room.players.length;
     const inRoom = room.players.map(player => player.id).includes(this.id);
 
     if (inRoom) {
       return this.emit("inRoom");
+    }
+
+    if (pwd[data.gameId]) {
+      if (!data.password)
+        return this.emit("errMess", { message: "Room require password" });
+      if (pwd[data.gameId] !== data.password)
+        return this.emit("errMess", { message: "Wrong password" });
     }
 
     if (playerNum !== 2) {
